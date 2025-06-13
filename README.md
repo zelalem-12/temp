@@ -38,3 +38,8 @@ openssl req -x509 \
 # ───────────────────────────────
 echo "✅ TLS certificate and private key created:"
 ls -lh "$CERT_DIR"
+
+
+
+
+https://today-api.proskillowner.com
