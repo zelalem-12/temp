@@ -1,47 +1,121 @@
-#!/bin/bash
-set -euo pipefail
+# Today Backend: Essential Commands
 
-# ───────────────────────────────
-# 🗂️ Config
-# ───────────────────────────────
-CERT_DIR=./config/certs
-KEY_BITS=4096
-DAYS_VALID=3650
+This quick reference guide contains the most important commands for managing your Today backend deployment.
 
-TLS_PRIVATE_KEY_FILE="$CERT_DIR/idp_tls_private_key.pem"
-TLS_CERT_FILE="$CERT_DIR/idp_tls_certificate.pem"
+## Connect to Server
 
-# ───────────────────────────────
-# 📁 Ensure directory exists
-# ───────────────────────────────
-mkdir -p "$CERT_DIR"
+```bash
+ssh -i todayapp-staging-pem.pem ubuntu@35.175.245.248
+```
 
-# ───────────────────────────────
-# 🔐 Generate TLS private key
-# ───────────────────────────────
-echo "🔐 Generating RSA ${KEY_BITS}-bit private key for TLS..."
-openssl genpkey -algorithm RSA -out "$TLS_PRIVATE_KEY_FILE" -pkeyopt rsa_keygen_bits:$KEY_BITS
+## Container Management
 
-# ───────────────────────────────
-# 📄 Create self-signed certificate (for local/dev)
-# ───────────────────────────────
-echo "📄 Creating self-signed TLS certificate..."
-openssl req -x509 \
-  -new \
-  -key "$TLS_PRIVATE_KEY_FILE" \
-  -out "$TLS_CERT_FILE" \
-  -days $DAYS_VALID \
-  -subj "/CN=idp.getchkd.local/O=GetChkd/C=US"
+### Check Container Status
 
-# ───────────────────────────────
-# ✅ Done
-# ───────────────────────────────
-echo "✅ TLS certificate and private key created:"
-ls -lh "$CERT_DIR"
+```bash
+ssh -i todayapp-staging-pem.pem ubuntu@35.175.245.248 "sudo docker ps"
+```
 
+### Start Container
 
+```bash
+ssh -i todayapp-staging-pem.pem ubuntu@35.175.245.248 "sudo docker start today-backend"
+```
 
+### Stop Container
 
-https://today-api.proskillowner.com
-https://today-api.proskillowner.com/token/top-gainers
+```bash
+ssh -i todayapp-staging-pem.pem ubuntu@35.175.245.248 "sudo docker stop today-backend"
+```
 
+### Restart Container
+
+```bash
+ssh -i todayapp-staging-pem.pem ubuntu@35.175.245.248 "sudo docker restart today-backend"
+```
+
+### View Logs
+
+```bash
+ssh -i todayapp-staging-pem.pem ubuntu@35.175.245.248 "sudo docker logs today-backend"
+```
+
+### Follow Logs in Real-time
+
+```bash
+ssh -i todayapp-staging-pem.pem ubuntu@35.175.245.248 "sudo docker logs -f today-backend"
+```
+
+## Deployment
+
+### Update Application (Pull Latest Code and Restart)
+
+```bash
+ssh -i todayapp-staging-pem.pem ubuntu@35.175.245.248 "cd ~/today-backend && git pull && sudo docker stop today-backend && sudo docker rm today-backend && sudo docker build -t today-app-backend . && sudo docker run -d -p 3070:3070 --env-file .env --restart unless-stopped --name today-backend today-app-backend"
+```
+
+## Monitoring
+
+### Check Resource Usage
+
+```bash
+ssh -i todayapp-staging-pem.pem ubuntu@35.175.245.248 "sudo docker stats today-backend --no-stream"
+```
+
+### Test API Endpoint
+
+```bash
+ssh -i todayapp-staging-pem.pem ubuntu@35.175.245.248 "curl http://localhost:3070/token/top-gainers"
+```
+
+## Troubleshooting
+
+### Check if Port is in Use
+
+```bash
+ssh -i todayapp-staging-pem.pem ubuntu@35.175.245.248 "sudo netstat -tulpn | grep 3070"
+```
+
+### Check Disk Space
+
+```bash
+ssh -i todayapp-staging-pem.pem ubuntu@35.175.245.248 "df -h"
+```
+
+### Run Container Interactively for Debugging
+
+```bash
+ssh -i todayapp-staging-pem.pem ubuntu@35.175.245.248 "cd ~/today-backend && sudo docker run --rm -it -p 3070:3070 --env-file .env today-app-backend"
+```
+
+## Backup
+
+### Backup Environment Variables
+
+```bash
+ssh -i todayapp-staging-pem.pem ubuntu@35.175.245.248 "cp ~/today-backend/.env ~/today-backend-env-backup-$(date +%Y%m%d)"
+```
+
+## Cleanup
+
+### Remove Unused Docker Resources (All)
+
+```bash
+ssh -i todayapp-staging-pem.pem ubuntu@35.175.245.248 "sudo docker system prune -a"
+```
+
+### Remove Only Dangling Images (Safe Cleanup)
+
+```bash
+ssh -i todayapp-staging-pem.pem ubuntu@35.175.245.248 "sudo docker image prune -f"
+```
+
+### Delete Old Direct Deployment Directory
+
+```bash
+# First ensure you have a backup of the .env file
+ssh -i todayapp-staging-pem.pem ubuntu@35.175.245.248 "test -f ~/today-backend/.env && echo 'Confirmed: .env exists in new location'"
+
+# Then delete the old directory
+ssh -i todayapp-staging-pem.pem ubuntu@35.175.245.248 "rm -rf ~/today-backend-direct"
+``` 
